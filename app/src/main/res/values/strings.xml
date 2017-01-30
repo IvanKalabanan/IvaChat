@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WebsocketIntgration</string>
+    <string name="hello_world">Hello Websocket</string>
+    <string name="action_settings">Settings</string>
+</resources>
