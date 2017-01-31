@@ -9,6 +9,8 @@ public class Constants {
     public static final String ADD_USER = "add user";
     public static final String LOGIN = "login";
     public static final java.lang.String NEW_MESSAGE = "new message";
+    public static final java.lang.String NEW_FILE = "new file";
     public static final java.lang.String TYPING = "typing";
     public static final String NUM_USERS = "numUsers";
+    public static final int SELECT_PICTURE_FILE = 228;
 }

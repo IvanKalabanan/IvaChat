@@ -1,13 +1,19 @@
 package socket.web.com.websocketintgration;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.github.nkzawa.emitter.Emitter;
@@ -17,9 +23,13 @@ import com.github.nkzawa.socketio.client.Socket;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 
 import socket.web.com.websocketintgration.utils.Constants;
+import socket.web.com.websocketintgration.utils.Utils;
 
 public class MainActivity extends Activity {
 
@@ -27,6 +37,7 @@ public class MainActivity extends Activity {
     private Socket mSocket;
     private TextView textView;
     private EditText editText;
+    private ImageView photo;
 
     private boolean isTyping;
 
@@ -53,6 +64,8 @@ public class MainActivity extends Activity {
 
         Button addUser = (Button) findViewById(R.id.addUser);
         Button sendMessage = (Button) findViewById(R.id.sendMessage);
+        Button sendFile= (Button) findViewById(R.id.sendFile);
+        photo = (ImageView) findViewById(R.id.foto);
 
         textView = (TextView) findViewById(R.id.txt);
         editText = (EditText) findViewById(R.id.etxt);
@@ -60,6 +73,7 @@ public class MainActivity extends Activity {
         mSocket.on(Constants.LOGIN, onLogin);
         mSocket.on(Constants.NEW_MESSAGE, onNewMessage);
         mSocket.on(Constants.TYPING, userIsTyping);
+        mSocket.on(Constants.NEW_FILE, onNewFile);
         mSocket.connect();
 
         editText.addTextChangedListener(new TextWatcher() {
@@ -99,6 +113,22 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
                 sendNewMessage();
+            }
+        });
+
+        sendFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(
+                        Intent.ACTION_PICK,
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                );
+                intent.setType("image/*");
+                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+                startActivityForResult(
+                        intent,
+                        Constants.SELECT_PICTURE_FILE
+                );
             }
         });
 
@@ -172,6 +202,30 @@ public class MainActivity extends Activity {
         }
     };
 
+    private Emitter.Listener onNewFile = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    JSONObject data = (JSONObject) args[0];
+                    String file, username;
+                    try {
+                        username = data.getString("username");
+                        file = data.getString("file");
+                    } catch (JSONException e) {
+                        Log.d(TAG, "run: JSONException Exception !!!");
+                        return;
+                    }
+
+                    // add the message to view
+                    byte[] decodedString = Base64.decode(file, Base64.DEFAULT);
+                    photo.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+                }
+            });
+        }
+    };
 
     private Emitter.Listener onLogin = new Emitter.Listener() {
         @Override
@@ -206,6 +260,33 @@ public class MainActivity extends Activity {
         mSocket.off(Constants.LOGIN, onLogin);
         mSocket.off(Constants.NEW_MESSAGE, onNewMessage);
         mSocket.off(Constants.TYPING, userIsTyping);
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (data != null && requestCode == Constants.SELECT_PICTURE_FILE) {
+            String tempAvatar = "";
+            Uri pickPictureFromPhone = data.getData();
+            String mFileToSendPath = Utils.getRealPathFromURI(getApplicationContext(), pickPictureFromPhone);
+
+            final InputStream imageStream;
+            try {
+                imageStream = getContentResolver().openInputStream(pickPictureFromPhone);
+                final Bitmap pictureBitmap = BitmapFactory.decodeStream(imageStream);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+                byte[] byteArrayImage = baos.toByteArray();
+                String encodedImage;
+                encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+               // tempAvatar = "data:image/png;base64," + encodedImage;
+                mSocket.emit(Constants.NEW_FILE, encodedImage);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+
+        }
 
     }
 }
