@@ -15,7 +15,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -28,8 +30,11 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import socket.web.com.websocketintgration.utils.Constants;
-import socket.web.com.websocketintgration.utils.Utils;
+import socket.web.com.websocketintgration.utils.RestAPICommunicator;
 
 public class MainActivity extends Activity {
 
@@ -49,7 +54,7 @@ public class MainActivity extends Activity {
             IO.Options opts = new IO.Options();
             opts.forceNew = true;
 //            opts.query = "token="+ "demo";
-            mSocket = IO.socket("http://192.168.1.18:80", opts);
+            mSocket = IO.socket(Constants.BASE_URL, opts);
 
         } catch (URISyntaxException e) {
             Log.d(TAG, "URISyntaxException...");
@@ -219,9 +224,15 @@ public class MainActivity extends Activity {
                         return;
                     }
 
-                    // add the message to view
-                    byte[] decodedString = Base64.decode(file, Base64.DEFAULT);
-                    photo.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+                    Glide
+                            .with(MainActivity.this)
+                            .load(file)
+                            .centerCrop()
+                            .dontAnimate()
+                            .crossFade()
+                            .placeholder(R.mipmap.ic_launcher)
+                            .into(photo);
+
                 }
             });
         }
@@ -267,9 +278,7 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (data != null && requestCode == Constants.SELECT_PICTURE_FILE) {
-            String tempAvatar = "";
             Uri pickPictureFromPhone = data.getData();
-            String mFileToSendPath = Utils.getRealPathFromURI(getApplicationContext(), pickPictureFromPhone);
 
             final InputStream imageStream;
             try {
@@ -280,8 +289,19 @@ public class MainActivity extends Activity {
                 byte[] byteArrayImage = baos.toByteArray();
                 String encodedImage;
                 encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+                RestAPICommunicator.getInstance().getCalls().sendFile(encodedImage).enqueue(new Callback<Void>() {
+                    @Override
+                    public void onResponse(Call<Void> call, Response<Void> response) {
+                        Toast.makeText(MainActivity.this, "FILE SEND", Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(Call<Void> call, Throwable t) {
+
+                    }
+                });
                // tempAvatar = "data:image/png;base64," + encodedImage;
-                mSocket.emit(Constants.NEW_FILE, encodedImage);
+               // mSocket.emit(Constants.NEW_FILE, encodedImage);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
