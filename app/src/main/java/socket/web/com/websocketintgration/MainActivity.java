@@ -2,10 +2,13 @@ package socket.web.com.websocketintgration;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -26,7 +29,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 
@@ -35,6 +40,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import socket.web.com.websocketintgration.utils.Constants;
 import socket.web.com.websocketintgration.utils.RestAPICommunicator;
+import socket.web.com.websocketintgration.utils.Utils;
 
 public class MainActivity extends Activity {
 
@@ -283,7 +289,17 @@ public class MainActivity extends Activity {
             final InputStream imageStream;
             try {
                 imageStream = getContentResolver().openInputStream(pickPictureFromPhone);
-                final Bitmap pictureBitmap = BitmapFactory.decodeStream(imageStream);
+                Bitmap decodeStreamBitmap = BitmapFactory.decodeStream(imageStream);
+
+                String[] orientationColumn = {MediaStore.Images.Media.ORIENTATION};
+                Cursor cur = getContentResolver().query(pickPictureFromPhone, orientationColumn, null, null, null);
+                int orientation = -1;
+                if (cur != null && cur.moveToFirst()) {
+                    orientation = cur.getInt(cur.getColumnIndex(orientationColumn[0]));
+                    cur.close();
+                }
+                Bitmap pictureBitmap = Utils.rotateImage(decodeStreamBitmap, orientation);
+
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
                 byte[] byteArrayImage = baos.toByteArray();
@@ -302,7 +318,7 @@ public class MainActivity extends Activity {
                 });
                // tempAvatar = "data:image/png;base64," + encodedImage;
                // mSocket.emit(Constants.NEW_FILE, encodedImage);
-            } catch (FileNotFoundException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
