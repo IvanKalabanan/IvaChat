@@ -6,6 +6,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
@@ -29,20 +31,31 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import socket.web.com.websocketintgration.adapters.ChatRecyclerViewAdapter;
+import socket.web.com.websocketintgration.models.ChatItem;
 import socket.web.com.websocketintgration.utils.Constants;
 import socket.web.com.websocketintgration.utils.RestAPICommunicator;
 
 public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
+
+    @BindView(R.id.addUser) Button addUser;
+    @BindView(R.id.sendMessage) Button sendMessage;
+    @BindView(R.id.sendFile) Button sendFile;
+    @BindView(R.id.messageList) RecyclerView messageList;
+
     private Socket mSocket;
-    private TextView textView;
     private EditText editText;
-    private ImageView photo;
+    private ChatRecyclerViewAdapter chatAdapter;
 
     private boolean isTyping;
 
@@ -67,19 +80,38 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.activity_main);
 
-        Button addUser = (Button) findViewById(R.id.addUser);
-        Button sendMessage = (Button) findViewById(R.id.sendMessage);
-        Button sendFile= (Button) findViewById(R.id.sendFile);
-        photo = (ImageView) findViewById(R.id.foto);
+        ButterKnife.bind(this);
 
-        textView = (TextView) findViewById(R.id.txt);
-        editText = (EditText) findViewById(R.id.etxt);
+        initView();
+        initRecycler();
 
         mSocket.on(Constants.LOGIN, onLogin);
         mSocket.on(Constants.NEW_MESSAGE, onNewMessage);
         mSocket.on(Constants.TYPING, userIsTyping);
         mSocket.on(Constants.NEW_FILE, onNewFile);
         mSocket.connect();
+    }
+
+    private void initRecycler() {
+        chatAdapter = new ChatRecyclerViewAdapter(
+                getApplicationContext(),
+                new ArrayList<ChatItem>()
+        );
+
+        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(
+                getApplicationContext(),
+                LinearLayoutManager.VERTICAL,
+                true
+        );
+
+        messageList.setLayoutManager(mLayoutManager);
+
+        messageList.setAdapter(chatAdapter);
+    }
+
+    private void initView() {
+
+        editText = (EditText) findViewById(R.id.etxt);
 
         editText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -105,39 +137,6 @@ public class MainActivity extends Activity {
 
             }
         });
-
-
-        addUser.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                addUser();
-            }
-        });
-
-        sendMessage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                sendNewMessage();
-            }
-        });
-
-        sendFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(
-                        Intent.ACTION_PICK,
-                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-                );
-                intent.setType("image/*");
-                intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-                startActivityForResult(
-                        intent,
-                        Constants.SELECT_PICTURE_FILE
-                );
-            }
-        });
-
-
     }
 
     private void addUser() {
@@ -146,6 +145,7 @@ public class MainActivity extends Activity {
 
     private void sendNewMessage() {
         mSocket.emit(Constants.NEW_MESSAGE, editText.getText());
+        chatAdapter.addNewItem(new ChatItem("", "", editText.getText().toString()));
         editText.setText("");
     }
 
@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
                     }
 
                     // add the message to view
-                    textView.setText(textView.getText()+"\n"+ username+": "+status);
+
                     Log.d(TAG, "message from server = " + username+": "+status);
                 }
             });
@@ -200,7 +200,7 @@ public class MainActivity extends Activity {
                     }
 
                     // add the message to view
-                    textView.setText(textView.getText()+"\n"+ username+": "+message);
+                    chatAdapter.addNewItem(new ChatItem(username, "", message));
                     Log.d(TAG, "message from server = " + message);
                 }
             });
@@ -224,15 +224,7 @@ public class MainActivity extends Activity {
                         return;
                     }
 
-                    Glide
-                            .with(MainActivity.this)
-                            .load(file)
-                            .centerCrop()
-                            .dontAnimate()
-                            .crossFade()
-                            .placeholder(R.mipmap.ic_launcher)
-                            .into(photo);
-
+                    chatAdapter.addNewItem(new ChatItem(username, file, ""));
                 }
             });
         }
@@ -255,7 +247,6 @@ public class MainActivity extends Activity {
                     }
 
                     // add the message to view
-                    textView.setText(textView.getText()+"\n current amount users in chat: "+ message);
                     Log.d(TAG, "message from server = " + message);
                 }
             });
@@ -278,35 +269,64 @@ public class MainActivity extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (data != null && requestCode == Constants.SELECT_PICTURE_FILE) {
-            Uri pickPictureFromPhone = data.getData();
+            final Uri pickPictureFromPhone = data.getData();
 
-            final InputStream imageStream;
-            try {
-                imageStream = getContentResolver().openInputStream(pickPictureFromPhone);
-                final Bitmap pictureBitmap = BitmapFactory.decodeStream(imageStream);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
-                byte[] byteArrayImage = baos.toByteArray();
-                String encodedImage;
-                encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
-                RestAPICommunicator.getInstance().getCalls().sendFile(encodedImage).enqueue(new Callback<Void>() {
-                    @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
-                        Toast.makeText(MainActivity.this, "FILE SEND", Toast.LENGTH_SHORT).show();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    final InputStream imageStream;
+                    try {
+                        imageStream = getContentResolver().openInputStream(pickPictureFromPhone);
+                        final Bitmap pictureBitmap = BitmapFactory.decodeStream(imageStream);
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+                        byte[] byteArrayImage = baos.toByteArray();
+                        String encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+                        RestAPICommunicator.getInstance().getCalls().sendFile(encodedImage).enqueue(new Callback<Void>() {
+                            @Override
+                            public void onResponse(Call<Void> call, Response<Void> response) {
+                                Toast.makeText(MainActivity.this, "FILE SEND", Toast.LENGTH_SHORT).show();
+                                //chatAdapter.addNewItem(new ChatItem("", ));
+                            }
+
+                            @Override
+                            public void onFailure(Call<Void> call, Throwable t) {
+
+                            }
+                        });
+                        // tempAvatar = "data:image/png;base64," + encodedImage;
+                        // mSocket.emit(Constants.NEW_FILE, encodedImage);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
                     }
-
-                    @Override
-                    public void onFailure(Call<Void> call, Throwable t) {
-
-                    }
-                });
-               // tempAvatar = "data:image/png;base64," + encodedImage;
-               // mSocket.emit(Constants.NEW_FILE, encodedImage);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-
+                }
+            });
         }
 
     }
+
+    @OnClick(R.id.addUser)
+    public void addUserButton() {
+        addUser();
+    }
+
+    @OnClick(R.id.sendMessage)
+    public void sendMessageButton() {
+        sendNewMessage();
+    }
+
+    @OnClick(R.id.sendFile)
+    public void sendFileButton() {
+        Intent intent = new Intent(
+                Intent.ACTION_PICK,
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        );
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        startActivityForResult(
+                intent,
+                Constants.SELECT_PICTURE_FILE
+        );
+    }
+
 }
