@@ -2,6 +2,7 @@ package socket.web.com.websocketintgration.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,15 +13,19 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import socket.web.com.websocketintgration.R;
+import socket.web.com.websocketintgration.models.ChatItem;
 import socket.web.com.websocketintgration.utils.Constants;
+import socket.web.com.websocketintgration.utils.Utils;
 
 /**
  * Created by root on 06.02.17.
  */
 
-public class LoginFragment extends BaseFragment {
+public class LoginFragment extends Fragment {
 
+    public static final String TAG = "LoginFragment";
     @BindView(R.id.username) EditText username;
+    @BindView(R.id.url) EditText url;
     @BindView(R.id.login) Button login;
 
     @Nullable
@@ -35,14 +40,16 @@ public class LoginFragment extends BaseFragment {
 
     @OnClick(R.id.login)
     public void loginClick() {
-        mSocket.emit(Constants.ADD_USER, username.getText().toString());
+        Utils.connectToServer(url.getText().toString(), username.getText().toString());
+
+        Utils.getSocket().emit(Constants.ADD_USER, username.getText().toString());
 
         getActivity().getSupportFragmentManager()
                 .beginTransaction()
-                .add(R.id.mainContainer,
-                        LikedFragment.newInstance(id),
-                        LikedFragment.TAG)
-                .addToBackStack(LikedFragment.TAG)
+                .replace(R.id.mainContainer,
+                        new ChatFragment(),
+                        ChatFragment.TAG)
+                .addToBackStack(ChatFragment.TAG)
                 .commit();
     }
 }

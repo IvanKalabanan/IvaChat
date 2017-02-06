@@ -18,6 +18,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import socket.web.com.websocketintgration.R;
 import socket.web.com.websocketintgration.models.ChatItem;
+import socket.web.com.websocketintgration.utils.Utils;
 
 /**
  * Created by iva on 02.02.17.
@@ -44,8 +45,8 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
     @Override
     public void onBindViewHolder(ChatHolder holder, int position) {
         ChatItem chatItem = chatList.get(position);
-        if (chatItem.getUsername().isEmpty()) {
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        if (chatItem.getUsername().equals(Utils.getMyUsername())) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.RIGHT;
             holder.message.setLayoutParams(params);
         }

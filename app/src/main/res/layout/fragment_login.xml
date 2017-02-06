@@ -8,10 +8,24 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/twenty_sp"
+        android:text="@string/enter_url"/>
+
+    <EditText
+        android:id="@+id/url"
+        android:gravity="center"
+        android:layout_width="@dimen/two_hundred_fifty_dp"
+        android:layout_height="wrap_content"
+        android:text="http://192.168.1.18:80"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/twenty_sp"
         android:text="@string/enter_username"/>
 
     <EditText
         android:id="@+id/username"
+        android:gravity="center"
         android:layout_width="@dimen/two_hundred_fifty_dp"
         android:layout_height="wrap_content" />
 

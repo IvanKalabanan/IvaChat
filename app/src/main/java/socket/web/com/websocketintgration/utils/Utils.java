@@ -4,6 +4,12 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
+
+import com.github.nkzawa.socketio.client.IO;
+import com.github.nkzawa.socketio.client.Socket;
+
+import java.net.URISyntaxException;
 
 /**
  * Created by iva on 31.01.17.
@@ -11,18 +17,33 @@ import android.provider.MediaStore;
 
 public class Utils {
 
-    public static String getRealPathFromURI(Context context, Uri contentUri) {
-        Cursor cursor = null;
+    private static Socket mSocket;
+
+    private static String myUsername;
+
+    private static final String TAG = "Utils";
+
+    public static boolean connectToServer(String url, String username) {
+        myUsername = username;
         try {
-            String[] proj = {MediaStore.Images.Media.DATA};
-            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            Log.d(TAG, "connecting...");
+            IO.Options opts = new IO.Options();
+            opts.forceNew = true;
+//            opts.query = "token="+ "demo";
+            mSocket = IO.socket(url, opts);
+            return true;
+        } catch (URISyntaxException e) {
+            Log.d(TAG, "URISyntaxException...");
+            return false;
         }
     }
+
+    public static Socket getSocket() {
+        return mSocket;
+    }
+
+    public static String getMyUsername() {
+        return myUsername;
+    }
+
 }
