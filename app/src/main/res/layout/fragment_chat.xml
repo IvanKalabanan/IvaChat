@@ -1,0 +1,61 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/five_dp"
+    tools:context=".MainActivity"
+    tools:ignore="MergeRootFrame">
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/messageList"
+        android:layout_above="@+id/etxt"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <EditText
+        android:id="@+id/etxt"
+        android:layout_above="@+id/buttonContainer"
+        android:layout_gravity="center"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:id="@+id/buttonContainer"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <Button
+            android:id="@+id/addUser"
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="@dimen/button_height"
+            android:text="JOIN" />
+
+
+        <Button
+            android:id="@+id/sendMessage"
+            android:layout_gravity="bottom"
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="@dimen/button_height"
+            android:text="SEND MESSAGE" />
+
+        <Button
+            android:id="@+id/sendFile"
+            android:layout_width="0dp"
+            android:layout_weight="0.5"
+            android:layout_height="@dimen/button_height"
+            android:text="SEND FILE" />
+
+    </LinearLayout>
+
+
+
+
+
+
+</RelativeLayout>

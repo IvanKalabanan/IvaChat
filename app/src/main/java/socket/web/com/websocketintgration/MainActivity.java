@@ -12,16 +12,11 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.github.nkzawa.emitter.Emitter;
-import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
 import org.json.JSONException;
@@ -30,7 +25,6 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 
 import butterknife.BindView;
@@ -48,31 +42,7 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "MainActivity";
 
-    @BindView(R.id.addUser) Button addUser;
-    @BindView(R.id.sendMessage) Button sendMessage;
-    @BindView(R.id.sendFile) Button sendFile;
-    @BindView(R.id.messageList) RecyclerView messageList;
-
-    private Socket mSocket;
-    private EditText editText;
-    private ChatRecyclerViewAdapter chatAdapter;
-
-    private boolean isTyping;
-
     private String myUsername = "Johnny";
-
-    {
-        try {
-            Log.d(TAG, "connecting...");
-            IO.Options opts = new IO.Options();
-            opts.forceNew = true;
-//            opts.query = "token="+ "demo";
-            mSocket = IO.socket(Constants.BASE_URL, opts);
-
-        } catch (URISyntaxException e) {
-            Log.d(TAG, "URISyntaxException...");
-        }
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
