@@ -1,4 +1,5 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
@@ -9,53 +10,50 @@
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/messageList"
-        android:layout_above="@+id/etxt"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <EditText
-        android:id="@+id/etxt"
+        android:layout_height="match_parent"
         android:layout_above="@+id/buttonContainer"
-        android:layout_gravity="center"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        app:stackFromEnd="true"
+        app:reverseLayout="true"/>
 
     <LinearLayout
         android:id="@+id/buttonContainer"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="@dimen/button_height"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal">
 
-
-        <Button
-            android:id="@+id/addUser"
-            android:layout_width="0dp"
-            android:layout_weight="0.5"
-            android:layout_height="@dimen/button_height"
-            android:text="JOIN" />
-
-
-        <Button
-            android:id="@+id/sendMessage"
-            android:layout_gravity="bottom"
-            android:layout_width="0dp"
-            android:layout_weight="0.5"
-            android:layout_height="@dimen/button_height"
-            android:text="SEND MESSAGE" />
-
-        <Button
+        <ImageView
             android:id="@+id/sendFile"
             android:layout_width="0dp"
-            android:layout_weight="0.5"
-            android:layout_height="@dimen/button_height"
-            android:text="SEND FILE" />
+            android:layout_height="match_parent"
+            android:layout_weight="0.1"
+            android:src="@drawable/ic_add_photo" />
+
+        <ImageView
+            android:id="@+id/uploadPhoto"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.1"
+            android:visibility="gone" />
+
+        <EditText
+            android:id="@+id/etxt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/buttonContainer"
+            android:layout_gravity="center"
+            android:layout_weight="0.8"
+            android:hint="@string/write_message" />
+
+        <ImageView
+            android:id="@+id/sendMessage"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="bottom"
+            android:layout_weight="0.1"
+            android:src="@drawable/ic_send_message" />
 
     </LinearLayout>
-
-
-
-
-
 
 </RelativeLayout>
