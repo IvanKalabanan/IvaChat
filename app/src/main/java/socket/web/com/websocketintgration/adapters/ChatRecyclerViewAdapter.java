@@ -8,9 +8,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.GlideDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import java.util.List;
 
@@ -43,26 +47,40 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
     }
 
     @Override
-    public void onBindViewHolder(ChatHolder holder, int position) {
+    public void onBindViewHolder(final ChatHolder holder, int position) {
         ChatItem chatItem = chatList.get(position);
         if (chatItem.getUsername().equals(Utils.getMyUsername())) {
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.gravity = Gravity.RIGHT;
-            holder.message.setLayoutParams(params);
+           holder.messageContainer.setGravity(Gravity.RIGHT);
+        }
+
+        if (!chatItem.getMessage().isEmpty()) {
+            holder.message.setText(chatItem.getMessage());
+        } else {
+            holder.message.setVisibility(View.GONE);
         }
 
         if (!chatItem.getPhotoUrl().isEmpty()) {
+            holder.progressPhoto.setVisibility(View.VISIBLE);
             Glide
                     .with(context)
                     .load(chatItem.getPhotoUrl())
-                    .centerCrop()
                     .dontAnimate()
                     .crossFade()
-                    .placeholder(R.mipmap.ic_launcher)
+                    .listener(new RequestListener<String, GlideDrawable>() {
+                        @Override
+                        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
+                            holder.progressPhoto.setVisibility(View.GONE);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+                            holder.progressPhoto.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
                     .into(holder.photo);
         }
-
-        holder.message.setText(chatItem.getMessage());
     }
 
     @Override
@@ -72,7 +90,7 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
 
     public void addNewItem(ChatItem item) {
         chatList.add(item);
-        notifyDataSetChanged();
+        notifyItemInserted(chatList.size());
     }
 
     public class ChatHolder extends RecyclerView.ViewHolder {
@@ -80,6 +98,8 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
         @BindView(R.id.username) TextView username;
         @BindView(R.id.photo) ImageView photo;
         @BindView(R.id.message) TextView message;
+        @BindView(R.id.messageContainer) LinearLayout messageContainer;
+        @BindView(R.id.progressPhoto) ProgressBar progressPhoto;
 
         public ChatHolder(View itemView) {
             super(itemView);

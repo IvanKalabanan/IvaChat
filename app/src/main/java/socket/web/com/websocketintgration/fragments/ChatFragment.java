@@ -1,34 +1,50 @@
 package socket.web.com.websocketintgration.fragments;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.github.nkzawa.emitter.Emitter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import socket.web.com.websocketintgration.MainActivity;
 import socket.web.com.websocketintgration.R;
 import socket.web.com.websocketintgration.adapters.ChatRecyclerViewAdapter;
 import socket.web.com.websocketintgration.models.ChatItem;
 import socket.web.com.websocketintgration.utils.Constants;
+import socket.web.com.websocketintgration.utils.RestAPICommunicator;
 import socket.web.com.websocketintgration.utils.Utils;
 
 /**
@@ -38,15 +54,16 @@ import socket.web.com.websocketintgration.utils.Utils;
 public class ChatFragment extends Fragment {
 
     public static final String TAG = "ChatFragment";
-    @BindView(R.id.addUser) Button addUser;
-    @BindView(R.id.sendMessage) Button sendMessage;
-    @BindView(R.id.sendFile) Button sendFile;
+    @BindView(R.id.sendMessage) ImageView sendMessage;
+    @BindView(R.id.sendFile) ImageView sendFile;
+    @BindView(R.id.uploadPhoto) ImageView uploadPhoto;
     @BindView(R.id.messageList) RecyclerView messageList;
     @BindView(R.id.etxt) EditText editText;
 
     private ChatRecyclerViewAdapter chatAdapter;
 
     private boolean isTyping;
+    private String encodedImage = "";
 
     @Nullable
     @Override
@@ -78,7 +95,7 @@ public class ChatFragment extends Fragment {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
-                if(i2 > 0 && !isTyping) {
+                if (i2 > 0 && !isTyping) {
                     isTyping = true;
                     Utils.getSocket().emit(Constants.TYPING, isTyping);
                 }
@@ -87,7 +104,7 @@ public class ChatFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
-                if(i2 == 0) {
+                if (i2 == 0) {
                     isTyping = false;
                     Utils.getSocket().emit(Constants.TYPING, isTyping);
                 }
@@ -101,15 +118,16 @@ public class ChatFragment extends Fragment {
     }
 
     private void initRecycler() {
+
+        messageList.setItemAnimator(new SlideInUpAnimator());
+
         chatAdapter = new ChatRecyclerViewAdapter(
                 getContext(),
                 new ArrayList<ChatItem>()
         );
 
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(
-                getContext(),
-                LinearLayoutManager.VERTICAL,
-                false
+                getContext()
         );
 
         messageList.setLayoutManager(mLayoutManager);
@@ -120,13 +138,14 @@ public class ChatFragment extends Fragment {
     private void sendNewMessage() {
         Utils.getSocket().emit(Constants.NEW_MESSAGE, editText.getText());
         chatAdapter.addNewItem(new ChatItem(Utils.getMyUsername(), "", editText.getText().toString()));
+        messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
         editText.setText("");
     }
 
     private Emitter.Listener userIsTyping = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
-           getActivity().runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
 
@@ -142,7 +161,7 @@ public class ChatFragment extends Fragment {
                         return;
                     }
 
-                    if(isTyping) {
+                    if (isTyping) {
                         status = "typing";
                     } else {
                         status = "stoped typing";
@@ -150,7 +169,7 @@ public class ChatFragment extends Fragment {
 
                     // add the message to view
 
-                    Log.d(TAG, "message from server = " + username+": "+status);
+                    Log.d(TAG, "message from server = " + username + ": " + status);
                 }
             });
         }
@@ -175,6 +194,7 @@ public class ChatFragment extends Fragment {
 
                     // add the message to view
                     chatAdapter.addNewItem(new ChatItem(username, "", message));
+                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
                     Log.d(TAG, "message from server = " + message);
                 }
             });
@@ -199,6 +219,7 @@ public class ChatFragment extends Fragment {
                     }
 
                     chatAdapter.addNewItem(new ChatItem(username, file, ""));
+                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
                 }
             });
         }
@@ -229,7 +250,24 @@ public class ChatFragment extends Fragment {
 
     @OnClick(R.id.sendMessage)
     public void sendMessageButton() {
-        sendNewMessage();
+        if (!editText.getText().toString().isEmpty()) {
+            sendNewMessage();
+        }
+        if (!encodedImage.isEmpty()) {
+            RestAPICommunicator.getInstance().getCalls().sendFile(encodedImage).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    Toast.makeText(getContext(), "FILE SEND", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+
+                }
+            });
+            encodedImage = "";
+            uploadPhoto.setVisibility(View.GONE);
+        }
     }
 
     @OnClick(R.id.sendFile)
@@ -240,12 +278,46 @@ public class ChatFragment extends Fragment {
         );
         intent.setType("image/*");
         intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-        getActivity().startActivityForResult(
+        startActivityForResult(
                 intent,
                 Constants.SELECT_PICTURE_FILE
         );
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (data != null && requestCode == Constants.SELECT_PICTURE_FILE) {
+            Uri pickPictureFromPhone = data.getData();
+
+            final InputStream imageStream;
+            try {
+                imageStream = getActivity().getContentResolver().openInputStream(pickPictureFromPhone);
+                Bitmap decodeStreamBitmap = BitmapFactory.decodeStream(imageStream);
+
+                uploadPhoto.setVisibility(View.VISIBLE);
+                uploadPhoto.setImageBitmap(decodeStreamBitmap);
+
+                String[] orientationColumn = {MediaStore.Images.Media.ORIENTATION};
+                Cursor cur = getActivity().getContentResolver().query(pickPictureFromPhone, orientationColumn, null, null, null);
+                int orientation = -1;
+                if (cur != null && cur.moveToFirst()) {
+                    orientation = cur.getInt(cur.getColumnIndex(orientationColumn[0]));
+                    cur.close();
+                }
+                decodeStreamBitmap = Utils.rotateImage(decodeStreamBitmap, orientation);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                decodeStreamBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos); //bm is the bitmap object
+                byte[] byteArrayImage = baos.toByteArray();
+                encodedImage = Base64.encodeToString(byteArrayImage, Base64.DEFAULT);
+                // tempAvatar = "data:image/png;base64," + encodedImage;
+                // mSocket.emit(Constants.NEW_FILE, encodedImage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     @Override
     public void onDestroy() {
