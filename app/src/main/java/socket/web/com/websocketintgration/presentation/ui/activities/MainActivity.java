@@ -1,10 +1,11 @@
-package socket.web.com.websocketintgration;
+package socket.web.com.websocketintgration.presentation.ui.activities;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
 import butterknife.ButterKnife;
-import socket.web.com.websocketintgration.fragments.LoginFragment;
+import socket.web.com.websocketintgration.R;
+import socket.web.com.websocketintgration.presentation.ui.fragments.LoginFragment;
 
 public class MainActivity extends AppCompatActivity {
 

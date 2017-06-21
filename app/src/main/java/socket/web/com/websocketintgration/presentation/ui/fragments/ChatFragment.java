@@ -1,4 +1,4 @@
-package socket.web.com.websocketintgration.fragments;
+package socket.web.com.websocketintgration.presentation.ui.fragments;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -18,7 +18,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -39,31 +38,142 @@ import jp.wasabeef.recyclerview.animators.SlideInUpAnimator;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import socket.web.com.websocketintgration.MainActivity;
 import socket.web.com.websocketintgration.R;
-import socket.web.com.websocketintgration.adapters.ChatRecyclerViewAdapter;
-import socket.web.com.websocketintgration.models.ChatItem;
-import socket.web.com.websocketintgration.utils.Constants;
-import socket.web.com.websocketintgration.utils.RestAPICommunicator;
-import socket.web.com.websocketintgration.utils.Utils;
+import socket.web.com.websocketintgration.domens.models.ChatItem;
+import socket.web.com.websocketintgration.domens.repository.base.RestAPICommunicator;
+import socket.web.com.websocketintgration.domens.threading.MainThreadImpl;
+import socket.web.com.websocketintgration.domens.utils.Constants;
+import socket.web.com.websocketintgration.domens.utils.Utils;
+import socket.web.com.websocketintgration.presentation.adapters.ChatRecyclerViewAdapter;
+import socket.web.com.websocketintgration.presentation.presenters.impl.ChatPresenterImpl;
+import socket.web.com.websocketintgration.presentation.presenters.interfaces.ChatPresenter;
 
 /**
  * Created by root on 06.02.17.
  */
 
-public class ChatFragment extends Fragment {
+public class ChatFragment extends Fragment implements ChatPresenter.View {
 
     public static final String TAG = "ChatFragment";
-    @BindView(R.id.sendMessage) ImageView sendMessage;
-    @BindView(R.id.sendFile) ImageView sendFile;
-    @BindView(R.id.uploadPhoto) ImageView uploadPhoto;
-    @BindView(R.id.messageList) RecyclerView messageList;
-    @BindView(R.id.etxt) EditText editText;
+    @BindView(R.id.sendMessage)
+    ImageView sendMessage;
+    @BindView(R.id.sendFile)
+    ImageView sendFile;
+    @BindView(R.id.uploadPhoto)
+    ImageView uploadPhoto;
+    @BindView(R.id.messageList)
+    RecyclerView messageList;
+    @BindView(R.id.etxt)
+    EditText editText;
+
+    private ChatPresenter presenter;
 
     private ChatRecyclerViewAdapter chatAdapter;
 
     private boolean isTyping;
     private String encodedImage = "";
+    private Emitter.Listener userIsTyping = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    JSONObject data = (JSONObject) args[0];
+                    String username, status;
+                    boolean isTyping;
+
+                    try {
+                        isTyping = data.getBoolean("isTyping");
+                        username = data.getString("username");
+                    } catch (JSONException e) {
+                        Log.d(TAG, "run: JSONException Exception !!!");
+                        return;
+                    }
+
+                    if (isTyping) {
+                        status = "typing";
+                    } else {
+                        status = "stoped typing";
+                    }
+
+                    // add the message to view
+
+                    Log.d(TAG, "message from server = " + username + ": " + status);
+                }
+            });
+        }
+    };
+    private Emitter.Listener onNewMessage = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    JSONObject data = (JSONObject) args[0];
+                    String message, username;
+                    try {
+                        username = data.getString("username");
+                        message = data.getString("message");
+                    } catch (JSONException e) {
+                        Log.d(TAG, "run: JSONException Exception !!!");
+                        return;
+                    }
+
+                    // add the message to view
+                    chatAdapter.addNewItem(new ChatItem(username, "", message));
+                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
+                    Log.d(TAG, "message from server = " + message);
+                }
+            });
+        }
+    };
+    private Emitter.Listener onNewFile = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    JSONObject data = (JSONObject) args[0];
+                    String file, username;
+                    try {
+                        username = data.getString("username");
+                        file = data.getString("file");
+                    } catch (JSONException e) {
+                        Log.d(TAG, "run: JSONException Exception !!!");
+                        return;
+                    }
+
+                    chatAdapter.addNewItem(new ChatItem(username, file, ""));
+                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
+                }
+            });
+        }
+    };
+    private Emitter.Listener onLogin = new Emitter.Listener() {
+        @Override
+        public void call(final Object... args) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    JSONObject data = (JSONObject) args[0];
+                    String message;
+                    try {
+                        message = data.getString(Constants.NUM_USERS);
+                    } catch (JSONException e) {
+                        Log.d(TAG, "run: JSONException Exception !!!");
+                        return;
+                    }
+
+                    // add the message to view
+                    Log.d(TAG, "message from server = " + message);
+                }
+            });
+        }
+    };
 
     @Nullable
     @Override
@@ -78,6 +188,12 @@ public class ChatFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        presenter = new ChatPresenterImpl(
+                MainThreadImpl.getInstance(),
+                RestAPICommunicator.getInstance().getCalls(),
+                this
+        );
 
         initView();
         initRecycler();
@@ -141,112 +257,6 @@ public class ChatFragment extends Fragment {
         messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
         editText.setText("");
     }
-
-    private Emitter.Listener userIsTyping = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    JSONObject data = (JSONObject) args[0];
-                    String username, status;
-                    boolean isTyping;
-
-                    try {
-                        isTyping = data.getBoolean("isTyping");
-                        username = data.getString("username");
-                    } catch (JSONException e) {
-                        Log.d(TAG, "run: JSONException Exception !!!");
-                        return;
-                    }
-
-                    if (isTyping) {
-                        status = "typing";
-                    } else {
-                        status = "stoped typing";
-                    }
-
-                    // add the message to view
-
-                    Log.d(TAG, "message from server = " + username + ": " + status);
-                }
-            });
-        }
-    };
-
-    private Emitter.Listener onNewMessage = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    JSONObject data = (JSONObject) args[0];
-                    String message, username;
-                    try {
-                        username = data.getString("username");
-                        message = data.getString("message");
-                    } catch (JSONException e) {
-                        Log.d(TAG, "run: JSONException Exception !!!");
-                        return;
-                    }
-
-                    // add the message to view
-                    chatAdapter.addNewItem(new ChatItem(username, "", message));
-                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
-                    Log.d(TAG, "message from server = " + message);
-                }
-            });
-        }
-    };
-
-    private Emitter.Listener onNewFile = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    JSONObject data = (JSONObject) args[0];
-                    String file, username;
-                    try {
-                        username = data.getString("username");
-                        file = data.getString("file");
-                    } catch (JSONException e) {
-                        Log.d(TAG, "run: JSONException Exception !!!");
-                        return;
-                    }
-
-                    chatAdapter.addNewItem(new ChatItem(username, file, ""));
-                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
-                }
-            });
-        }
-    };
-
-    private Emitter.Listener onLogin = new Emitter.Listener() {
-        @Override
-        public void call(final Object... args) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
-                    JSONObject data = (JSONObject) args[0];
-                    String message;
-                    try {
-                        message = data.getString(Constants.NUM_USERS);
-                    } catch (JSONException e) {
-                        Log.d(TAG, "run: JSONException Exception !!!");
-                        return;
-                    }
-
-                    // add the message to view
-                    Log.d(TAG, "message from server = " + message);
-                }
-            });
-        }
-    };
 
     @OnClick(R.id.sendMessage)
     public void sendMessageButton() {
@@ -330,4 +340,18 @@ public class ChatFragment extends Fragment {
 
     }
 
+    @Override
+    public void showProgress() {
+
+    }
+
+    @Override
+    public void hideProgress() {
+
+    }
+
+    @Override
+    public void showError(String message) {
+
+    }
 }

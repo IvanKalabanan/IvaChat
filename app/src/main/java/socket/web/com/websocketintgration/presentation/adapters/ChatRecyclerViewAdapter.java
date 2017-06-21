@@ -1,4 +1,4 @@
-package socket.web.com.websocketintgration.adapters;
+package socket.web.com.websocketintgration.presentation.adapters;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -21,8 +21,8 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import socket.web.com.websocketintgration.R;
-import socket.web.com.websocketintgration.models.ChatItem;
-import socket.web.com.websocketintgration.utils.Utils;
+import socket.web.com.websocketintgration.domens.models.ChatItem;
+import socket.web.com.websocketintgration.domens.utils.Utils;
 
 /**
  * Created by iva on 02.02.17.

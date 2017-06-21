@@ -1,4 +1,4 @@
-package socket.web.com.websocketintgration.utils;
+package socket.web.com.websocketintgration.domens.utils;
 
 /**
  * Created by rabbit on 1/30/17.

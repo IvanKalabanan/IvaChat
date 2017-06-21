@@ -1,4 +1,4 @@
-package socket.web.com.websocketintgration.utils;
+package socket.web.com.websocketintgration.domens.repository.base;
 
 import android.util.Log;
 
@@ -12,12 +12,12 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
-import socket.web.com.websocketintgration.interfaces.APICalls;
+import socket.web.com.websocketintgration.domens.repository.APICalls;
+import socket.web.com.websocketintgration.domens.utils.Constants;
 
 /**
  * Created by iva on 01.02.17.

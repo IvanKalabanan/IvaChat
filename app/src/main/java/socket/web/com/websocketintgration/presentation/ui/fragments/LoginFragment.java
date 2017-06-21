@@ -1,4 +1,4 @@
-package socket.web.com.websocketintgration.fragments;
+package socket.web.com.websocketintgration.presentation.ui.fragments;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -13,9 +13,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import socket.web.com.websocketintgration.R;
-import socket.web.com.websocketintgration.models.ChatItem;
-import socket.web.com.websocketintgration.utils.Constants;
-import socket.web.com.websocketintgration.utils.Utils;
+import socket.web.com.websocketintgration.domens.utils.Constants;
+import socket.web.com.websocketintgration.domens.utils.Utils;
 
 /**
  * Created by root on 06.02.17.
