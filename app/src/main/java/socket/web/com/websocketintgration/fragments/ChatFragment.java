@@ -257,7 +257,7 @@ public class ChatFragment extends Fragment {
             RestAPICommunicator.getInstance().getCalls().sendFile(encodedImage).enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(Call<Void> call, Response<Void> response) {
-                    Toast.makeText(getContext(), "FILE SEND", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "FILE GET", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override

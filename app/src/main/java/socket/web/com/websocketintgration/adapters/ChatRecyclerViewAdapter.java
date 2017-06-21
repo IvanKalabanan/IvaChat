@@ -88,6 +88,7 @@ public class ChatRecyclerViewAdapter extends RecyclerView.Adapter<ChatRecyclerVi
         return chatList.size();
     }
 
+
     public void addNewItem(ChatItem item) {
         chatList.add(item);
         notifyItemInserted(chatList.size());
