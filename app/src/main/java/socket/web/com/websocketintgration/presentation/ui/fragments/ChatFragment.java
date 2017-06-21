@@ -2,6 +2,7 @@ package socket.web.com.websocketintgration.presentation.ui.fragments;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -39,6 +40,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import socket.web.com.websocketintgration.R;
+import socket.web.com.websocketintgration.databinding.FragmentChatBinding;
 import socket.web.com.websocketintgration.domens.models.ChatItem;
 import socket.web.com.websocketintgration.domens.repository.base.RestAPICommunicator;
 import socket.web.com.websocketintgration.domens.threading.MainThreadImpl;
@@ -55,16 +57,8 @@ import socket.web.com.websocketintgration.presentation.presenters.interfaces.Cha
 public class ChatFragment extends Fragment implements ChatPresenter.View {
 
     public static final String TAG = "ChatFragment";
-    @BindView(R.id.sendMessage)
-    ImageView sendMessage;
-    @BindView(R.id.sendFile)
-    ImageView sendFile;
-    @BindView(R.id.uploadPhoto)
-    ImageView uploadPhoto;
-    @BindView(R.id.messageList)
-    RecyclerView messageList;
-    @BindView(R.id.etxt)
-    EditText editText;
+
+    private FragmentChatBinding binding;
 
     private ChatPresenter presenter;
 
@@ -123,7 +117,7 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
 
                     // add the message to view
                     chatAdapter.addNewItem(new ChatItem(username, "", message));
-                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
+                    binding.messageList.getLayoutManager().smoothScrollToPosition(binding.messageList, null, chatAdapter.getItemCount() - 1);
                     Log.d(TAG, "message from server = " + message);
                 }
             });
@@ -147,7 +141,7 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
                     }
 
                     chatAdapter.addNewItem(new ChatItem(username, file, ""));
-                    messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
+                    binding.messageList.getLayoutManager().smoothScrollToPosition(binding.messageList, null, chatAdapter.getItemCount() - 1);
                 }
             });
         }
@@ -178,11 +172,9 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View root = inflater.inflate(R.layout.fragment_chat, container, false);
+        binding = DataBindingUtil.inflate(inflater,R.layout.fragment_chat, container, false);
 
-        ButterKnife.bind(this, root);
-
-        return root;
+        return binding.getRoot();
     }
 
     @Override
@@ -207,7 +199,7 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
 
     private void initView() {
 
-        editText.addTextChangedListener(new TextWatcher() {
+        binding.etxt.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
@@ -235,7 +227,7 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
 
     private void initRecycler() {
 
-        messageList.setItemAnimator(new SlideInUpAnimator());
+        binding.messageList.setItemAnimator(new SlideInUpAnimator());
 
         chatAdapter = new ChatRecyclerViewAdapter(
                 getContext(),
@@ -246,21 +238,21 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
                 getContext()
         );
 
-        messageList.setLayoutManager(mLayoutManager);
+        binding.messageList.setLayoutManager(mLayoutManager);
 
-        messageList.setAdapter(chatAdapter);
+        binding.messageList.setAdapter(chatAdapter);
     }
 
     private void sendNewMessage() {
-        Utils.getSocket().emit(Constants.NEW_MESSAGE, editText.getText());
-        chatAdapter.addNewItem(new ChatItem(Utils.getMyUsername(), "", editText.getText().toString()));
-        messageList.getLayoutManager().smoothScrollToPosition(messageList, null, chatAdapter.getItemCount() - 1);
-        editText.setText("");
+        Utils.getSocket().emit(Constants.NEW_MESSAGE, binding.etxt.getText());
+        chatAdapter.addNewItem(new ChatItem(Utils.getMyUsername(), "", binding.etxt.getText().toString()));
+        binding.messageList.getLayoutManager().smoothScrollToPosition(binding.messageList, null, chatAdapter.getItemCount() - 1);
+        binding.etxt.setText("");
     }
 
     @OnClick(R.id.sendMessage)
     public void sendMessageButton() {
-        if (!editText.getText().toString().isEmpty()) {
+        if (!binding.etxt.getText().toString().isEmpty()) {
             sendNewMessage();
         }
         if (!encodedImage.isEmpty()) {
@@ -276,7 +268,7 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
                 }
             });
             encodedImage = "";
-            uploadPhoto.setVisibility(View.GONE);
+            binding.uploadPhoto.setVisibility(View.GONE);
         }
     }
 
@@ -305,8 +297,8 @@ public class ChatFragment extends Fragment implements ChatPresenter.View {
                 imageStream = getActivity().getContentResolver().openInputStream(pickPictureFromPhone);
                 Bitmap decodeStreamBitmap = BitmapFactory.decodeStream(imageStream);
 
-                uploadPhoto.setVisibility(View.VISIBLE);
-                uploadPhoto.setImageBitmap(decodeStreamBitmap);
+                binding.uploadPhoto.setVisibility(View.VISIBLE);
+                binding.uploadPhoto.setImageBitmap(decodeStreamBitmap);
 
                 String[] orientationColumn = {MediaStore.Images.Media.ORIENTATION};
                 Cursor cur = getActivity().getContentResolver().query(pickPictureFromPhone, orientationColumn, null, null, null);
