@@ -13,6 +13,7 @@ public class Constants {
     public static final java.lang.String TYPING = "typing";
     public static final String NUM_USERS = "numUsers";
     public static final int SELECT_PICTURE_FILE = 228;
-    public static final String BASE_URL = "http://192.168.1.18:80";
+    public static final String BASE_URL = "http://192.168.0.101:80";
     public static final String FILE = "file";
+    public static final String NAME = "name";
 }
