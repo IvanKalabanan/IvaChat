@@ -9,7 +9,7 @@ import socket.web.com.websocketintgration.presentation.ui.fragments.LoginFragmen
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
+    public static final String TAG = "MainActivity";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

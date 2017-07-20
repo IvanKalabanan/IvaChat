@@ -5,4 +5,10 @@
     <string name="enter_username">Enter your username</string>
     <string name="enter_url">Enter server URL</string>
     <string name="write_message">Write message</string>
+    <string name="name">Name</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="create_account">Create account</string>
+    <string name="not_account_yet">No account yet? Create one</string>
+    <string name="email">Email</string>
 </resources>
